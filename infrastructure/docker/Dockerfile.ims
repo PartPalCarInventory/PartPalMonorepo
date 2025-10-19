@@ -1,0 +1,60 @@
+# Multi-stage build for PartPal IMS
+FROM node:20-alpine AS base
+
+# Install dependencies only when needed
+FROM base AS deps
+RUN apk add --no-cache libc6-compat
+WORKDIR /app
+
+# Install pnpm
+RUN corepack enable && corepack prepare pnpm@8.15.0 --activate
+
+# Copy package files
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/ims/package.json ./apps/ims/
+COPY packages/shared-ui/package.json ./packages/shared-ui/
+COPY packages/shared-types/package.json ./packages/shared-types/
+COPY packages/shared-utils/package.json ./packages/shared-utils/
+
+# Install dependencies
+RUN pnpm install --frozen-lockfile --prod
+
+# Rebuild the source code only when needed
+FROM base AS builder
+WORKDIR /app
+
+# Install pnpm
+RUN corepack enable && corepack prepare pnpm@8.15.0 --activate
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+
+# Build the IMS app
+ENV NEXT_TELEMETRY_DISABLED 1
+RUN pnpm --filter @partpal/ims build
+
+# Production image, copy all the files and run next
+FROM base AS runner
+WORKDIR /app
+
+ENV NODE_ENV production
+ENV NEXT_TELEMETRY_DISABLED 1
+
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
+# Copy built application
+COPY --from=builder /app/apps/ims/public ./public
+COPY --from=builder /app/apps/ims/.next/standalone ./
+COPY --from=builder /app/apps/ims/.next/static ./apps/ims/.next/static
+
+# Set correct permissions
+RUN chown -R nextjs:nodejs /app
+USER nextjs
+
+EXPOSE 3001
+
+ENV PORT 3001
+ENV HOSTNAME "0.0.0.0"
+
+CMD ["node", "apps/ims/server.js"]

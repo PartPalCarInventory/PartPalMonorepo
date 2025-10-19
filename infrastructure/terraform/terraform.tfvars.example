@@ -1,0 +1,125 @@
+# PartPal Infrastructure Configuration Template
+# Copy this file to terraform.tfvars.{environment} and customize for your needs
+
+# Basic Configuration
+environment = "development"  # development, staging, production
+aws_region  = "af-south-1"   # Cape Town region for South African deployment
+
+# Domain Configuration
+domain_name = "partpal.co.za"
+subject_alternative_names = [
+  "*.partpal.co.za",
+  "www.partpal.co.za"
+]
+
+# Network Configuration
+vpc_cidr = "10.0.0.0/16"
+
+# Kubernetes Configuration
+kubernetes_version = "1.27"
+
+# Node Groups Configuration
+node_groups = {
+  general = {
+    capacity_type    = "ON_DEMAND"
+    instance_types   = ["t3.medium"]
+    desired_size     = 2
+    max_size         = 4
+    min_size         = 1
+    max_unavailable  = 1
+  }
+  spot = {
+    capacity_type    = "SPOT"
+    instance_types   = ["t3.medium", "t3.large"]
+    desired_size     = 1
+    max_size         = 3
+    min_size         = 0
+    max_unavailable  = 1
+  }
+}
+
+# Cluster endpoint access
+cluster_endpoint_public_access_cidrs = ["0.0.0.0/0"]  # Restrict this for production
+
+# Database Configuration
+postgres_version     = "15.4"
+db_instance_class    = "db.t3.micro"  # Use larger for production
+db_allocated_storage = 20
+db_max_allocated_storage = 100
+db_name              = "partpal"
+db_username          = "partpal"
+db_password          = "change-this-password-123!"  # Use a secure password
+db_backup_retention_period = 7
+db_backup_window          = "03:00-04:00"
+db_maintenance_window     = "sun:04:00-sun:05:00"
+
+# Redis Configuration
+redis_node_type       = "cache.t3.micro"  # Use larger for production
+redis_num_cache_nodes = 1
+
+# Application Load Balancer Configuration
+alb_target_groups = [
+  {
+    name             = "partpal-marketplace"
+    backend_protocol = "HTTP"
+    backend_port     = 3000
+    target_type      = "ip"
+    health_check = {
+      enabled             = true
+      healthy_threshold   = 2
+      interval            = 30
+      matcher             = "200"
+      path                = "/api/health"
+      port                = "traffic-port"
+      protocol            = "HTTP"
+      timeout             = 5
+      unhealthy_threshold = 2
+    }
+  },
+  {
+    name             = "partpal-ims"
+    backend_protocol = "HTTP"
+    backend_port     = 3001
+    target_type      = "ip"
+    health_check = {
+      enabled             = true
+      healthy_threshold   = 2
+      interval            = 30
+      matcher             = "200"
+      path                = "/api/health"
+      port                = "traffic-port"
+      protocol            = "HTTP"
+      timeout             = 5
+      unhealthy_threshold = 2
+    }
+  },
+  {
+    name             = "partpal-api"
+    backend_protocol = "HTTP"
+    backend_port     = 3333
+    target_type      = "ip"
+    health_check = {
+      enabled             = true
+      healthy_threshold   = 2
+      interval            = 30
+      matcher             = "200"
+      path                = "/health"
+      port                = "traffic-port"
+      protocol            = "HTTP"
+      timeout             = 5
+      unhealthy_threshold = 2
+    }
+  }
+]
+
+# Logging Configuration
+log_retention_days = 7  # Increase for production
+
+# Tags
+tags = {
+  Project     = "PartPal"
+  Environment = "development"
+  ManagedBy   = "Terraform"
+  Owner       = "PartPal-DevOps"
+  CostCenter  = "Engineering"
+}

@@ -1,0 +1,340 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [main]
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      deploy_ims:
+        description: 'Deploy IMS'
+        required: false
+        default: 'true'
+        type: boolean
+      deploy_marketplace:
+        description: 'Deploy Marketplace'
+        required: false
+        default: 'true'
+        type: boolean
+      deploy_api:
+        description: 'Deploy API'
+        required: false
+        default: 'true'
+        type: boolean
+      skip_tests:
+        description: 'Skip tests (emergency deployment)'
+        required: false
+        default: 'false'
+        type: boolean
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_PRODUCTION }}
+  NAMESPACE: partpal
+
+jobs:
+  changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      apps-ims: ${{ steps.changes.outputs.apps-ims }}
+      apps-marketplace: ${{ steps.changes.outputs.apps-marketplace }}
+      services-api: ${{ steps.changes.outputs.services-api }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for changes
+        uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          filters: |
+            apps-ims:
+              - 'apps/ims/**'
+              - 'packages/**'
+            apps-marketplace:
+              - 'apps/marketplace/**'
+              - 'packages/**'
+            services-api:
+              - 'services/api/**'
+              - 'packages/**'
+
+  pre-deployment-tests:
+    name: Pre-deployment Tests
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.skip_tests != 'true' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm run test
+
+      - name: Run linting
+        run: npm run lint
+
+      - name: Run type checking
+        run: npm run typecheck
+
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [changes, pre-deployment-tests]
+    if: always() && (needs.pre-deployment-tests.result == 'success' || needs.pre-deployment-tests.result == 'skipped')
+    environment:
+      name: production
+      url: https://partpal.co.za
+    strategy:
+      max-parallel: 1  # Deploy one service at a time for production
+      matrix:
+        include:
+          - app: api
+            port: 3333
+            service_name: partpal-api
+            condition: ${{ needs.changes.outputs.services-api == 'true' || github.event.inputs.deploy_api == 'true' }}
+            priority: 1
+          - app: ims
+            port: 3001
+            service_name: partpal-ims
+            condition: ${{ needs.changes.outputs.apps-ims == 'true' || github.event.inputs.deploy_ims == 'true' }}
+            priority: 2
+          - app: marketplace
+            port: 3000
+            service_name: partpal-marketplace
+            condition: ${{ needs.changes.outputs.apps-marketplace == 'true' || github.event.inputs.deploy_marketplace == 'true' }}
+            priority: 3
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
+
+      - name: Configure kubectl
+        run: |
+          echo "${{ env.KUBE_CONFIG_DATA }}" | base64 -d > kubeconfig
+          export KUBECONFIG=kubeconfig
+
+      - name: Create backup of current deployment
+        if: ${{ matrix.condition == 'true' }}
+        run: |
+          export KUBECONFIG=kubeconfig
+
+          # Create backup namespace
+          kubectl create namespace partpal-backup-$(date +%s) --dry-run=client -o yaml | kubectl apply -f -
+
+          # Export current deployment
+          kubectl get deployment ${{ matrix.service_name }} -n ${{ env.NAMESPACE }} -o yaml > backup-${{ matrix.app }}-deployment.yaml
+
+          # Store as artifact for rollback if needed
+          echo "Backup created for ${{ matrix.app }}"
+
+      - name: Deploy ${{ matrix.app }} to production
+        if: ${{ matrix.condition == 'true' }}
+        run: |
+          export KUBECONFIG=kubeconfig
+
+          # Use blue-green deployment strategy
+          cat <<EOF | kubectl apply -f -
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: ${{ matrix.service_name }}-green
+            namespace: ${{ env.NAMESPACE }}
+            labels:
+              app: ${{ matrix.service_name }}
+              version: green
+              environment: production
+          spec:
+            replicas: 3
+            selector:
+              matchLabels:
+                app: ${{ matrix.service_name }}
+                version: green
+            template:
+              metadata:
+                labels:
+                  app: ${{ matrix.service_name }}
+                  version: green
+                  environment: production
+              spec:
+                containers:
+                - name: ${{ matrix.app }}
+                  image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-${{ matrix.app }}:main
+                  ports:
+                  - containerPort: ${{ matrix.port }}
+                  env:
+                  - name: NODE_ENV
+                    value: "production"
+                  - name: DATABASE_URL
+                    valueFrom:
+                      secretKeyRef:
+                        name: partpal-production-secrets
+                        key: database-url
+                  - name: REDIS_URL
+                    valueFrom:
+                      secretKeyRef:
+                        name: partpal-production-secrets
+                        key: redis-url
+                  - name: JWT_SECRET
+                    valueFrom:
+                      secretKeyRef:
+                        name: partpal-production-secrets
+                        key: jwt-secret
+                  - name: CLOUDINARY_CLOUD_NAME
+                    valueFrom:
+                      secretKeyRef:
+                        name: partpal-production-secrets
+                        key: cloudinary-cloud-name
+                  - name: CLOUDINARY_API_KEY
+                    valueFrom:
+                      secretKeyRef:
+                        name: partpal-production-secrets
+                        key: cloudinary-api-key
+                  - name: CLOUDINARY_API_SECRET
+                    valueFrom:
+                      secretKeyRef:
+                        name: partpal-production-secrets
+                        key: cloudinary-api-secret
+                  resources:
+                    requests:
+                      memory: "512Mi"
+                      cpu: "500m"
+                    limits:
+                      memory: "1Gi"
+                      cpu: "1000m"
+                  livenessProbe:
+                    httpGet:
+                      path: /api/health
+                      port: ${{ matrix.port }}
+                    initialDelaySeconds: 60
+                    periodSeconds: 30
+                    timeoutSeconds: 10
+                    failureThreshold: 3
+                  readinessProbe:
+                    httpGet:
+                      path: /api/health
+                      port: ${{ matrix.port }}
+                    initialDelaySeconds: 10
+                    periodSeconds: 5
+                    timeoutSeconds: 5
+                    failureThreshold: 3
+          EOF
+
+      - name: Wait for green deployment rollout
+        if: ${{ matrix.condition == 'true' }}
+        run: |
+          export KUBECONFIG=kubeconfig
+          kubectl rollout status deployment/${{ matrix.service_name }}-green -n ${{ env.NAMESPACE }} --timeout=600s
+
+      - name: Run production health checks
+        if: ${{ matrix.condition == 'true' }}
+        run: |
+          export KUBECONFIG=kubeconfig
+
+          # Wait for pods to be ready
+          kubectl wait --for=condition=ready pod -l app=${{ matrix.service_name }},version=green -n ${{ env.NAMESPACE }} --timeout=300s
+
+          # Get green pod IP for health check
+          GREEN_POD_IP=$(kubectl get pods -l app=${{ matrix.service_name }},version=green -n ${{ env.NAMESPACE }} -o jsonpath='{.items[0].status.podIP}')
+
+          # Extended health check
+          kubectl run health-check-${{ matrix.app }}-$(date +%s) --rm -i --restart=Never --image=curlimages/curl -- \
+            sh -c "
+              for i in \$(seq 1 10); do
+                echo \"Health check attempt \$i\"
+                if curl -f http://$GREEN_POD_IP:${{ matrix.port }}/api/health; then
+                  echo \"Health check passed\"
+                  exit 0
+                fi
+                sleep 5
+              done
+              echo \"Health check failed after 10 attempts\"
+              exit 1
+            "
+
+      - name: Switch traffic to green deployment
+        if: ${{ matrix.condition == 'true' }}
+        run: |
+          export KUBECONFIG=kubeconfig
+
+          # Update service selector to point to green deployment
+          kubectl patch service ${{ matrix.service_name }}-service -n ${{ env.NAMESPACE }} -p '{"spec":{"selector":{"version":"green"}}}'
+
+          echo "Traffic switched to green deployment for ${{ matrix.app }}"
+
+      - name: Clean up blue deployment
+        if: ${{ matrix.condition == 'true' }}
+        run: |
+          export KUBECONFIG=kubeconfig
+
+          # Wait 5 minutes before cleaning up blue deployment
+          sleep 300
+
+          # Delete old blue deployment if it exists
+          kubectl delete deployment ${{ matrix.service_name }} -n ${{ env.NAMESPACE }} --ignore-not-found=true
+
+          # Rename green to main
+          kubectl patch deployment ${{ matrix.service_name }}-green -n ${{ env.NAMESPACE }} -p '{"metadata":{"name":"${{ matrix.service_name }}"}}'
+          kubectl patch deployment ${{ matrix.service_name }}-green -n ${{ env.NAMESPACE }} -p '{"spec":{"selector":{"matchLabels":{"version":null}}}}'
+          kubectl patch deployment ${{ matrix.service_name }}-green -n ${{ env.NAMESPACE }} -p '{"spec":{"template":{"metadata":{"labels":{"version":null}}}}}'
+
+      - name: Upload deployment artifacts
+        if: ${{ matrix.condition == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-backup-${{ matrix.app }}
+          path: backup-${{ matrix.app }}-deployment.yaml
+          retention-days: 30
+
+  post-deployment-tests:
+    name: Post-deployment Tests
+    runs-on: ubuntu-latest
+    needs: deploy
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run production smoke tests
+        run: |
+          # Basic connectivity tests
+          curl -f https://partpal.co.za/api/health
+          curl -f https://ims.partpal.co.za/api/health
+
+          echo "✅ All production services are responding"
+
+  notify:
+    name: Notify Deployment
+    runs-on: ubuntu-latest
+    needs: [deploy, post-deployment-tests]
+    if: always()
+    steps:
+      - name: Notify success
+        if: needs.deploy.result == 'success' && needs.post-deployment-tests.result == 'success'
+        run: |
+          echo "✅ Production deployment completed successfully"
+          echo "🚀 PartPal is live at https://partpal.co.za"
+          echo "🏢 IMS available at https://ims.partpal.co.za"
+
+      - name: Notify failure
+        if: needs.deploy.result == 'failure' || needs.post-deployment-tests.result == 'failure'
+        run: |
+          echo "❌ Production deployment failed"
+          echo "🚨 Manual intervention may be required"
+          exit 1

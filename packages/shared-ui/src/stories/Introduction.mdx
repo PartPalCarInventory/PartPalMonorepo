@@ -1,0 +1,196 @@
+import { Meta } from '@storybook/blocks';
+
+<Meta title="Introduction/Getting Started" />
+
+# PartPal Design System
+
+Welcome to PartPal's comprehensive design system and component library. This Storybook provides interactive documentation for all UI components, patterns, and guidelines used across PartPal's auto parts management platform.
+
+## What is PartPal?
+
+PartPal is a dual-application platform designed specifically for the South African used auto parts industry:
+
+- **PartPal IMS** (Inventory Management System): B2B tool for scrap yards, auto shops, and dealers to manage their parts inventory
+- **PartPal Marketplace**: Public platform connecting auto parts buyers with verified sellers
+
+## Design Principles
+
+### 🎯 **Auto Parts Focused**
+Every component is designed with the auto parts industry in mind, from vehicle selection dropdowns to part condition badges.
+
+### 📱 **Mobile-First**
+All components are optimized for mobile use with touch-friendly interactions and responsive design.
+
+### ♿ **Accessibility First**
+WCAG 2.1 AA compliance ensures our platform is usable by everyone, including users with disabilities.
+
+### 🏢 **Business Ready**
+Components support real business workflows like inventory management, seller verification, and marketplace transactions.
+
+## Getting Started
+
+### Installation
+
+```bash
+npm install @partpal/shared-ui
+```
+
+### Basic Usage
+
+```tsx
+import { Button, Card, Select } from '@partpal/shared-ui';
+import '@partpal/shared-ui/styles';
+
+function App() {
+  return (
+    <Card>
+      <h1>Welcome to PartPal</h1>
+      <Button variant="primary">Get Started</Button>
+    </Card>
+  );
+}
+```
+
+### With Accessibility Provider
+
+```tsx
+import { AccessibilityProvider } from '@partpal/shared-ui';
+
+function App() {
+  return (
+    <AccessibilityProvider>
+      <YourApp />
+    </AccessibilityProvider>
+  );
+}
+```
+
+## Component Categories
+
+### 🧱 **Core Components**
+Basic building blocks like buttons, cards, badges, and loading states.
+
+### 🔧 **Advanced Components**
+Complex components like tables, modals, tabs, and select dropdowns with advanced functionality.
+
+### 📝 **Form Components**
+Complete form system with validation, accessibility, and mobile optimization.
+
+### ♿ **Accessibility**
+Utilities and providers for creating inclusive user experiences.
+
+### 🏗️ **Patterns**
+Real-world usage examples and complete application workflows.
+
+## Design Tokens
+
+### Colors
+- **Primary**: #3b82f6 (Blue) - PartPal brand color
+- **Secondary**: Gray scale for neutral elements
+- **Accent**: #f37319 (Orange) - Call-to-action and highlights
+- **Success**: #22c55e (Green) - Success states and available parts
+- **Warning**: #f59e0b (Yellow) - Warnings and fair condition
+- **Error**: #ef4444 (Red) - Errors and unavailable parts
+
+### Typography
+- **Font Family**: Inter (primary), JetBrains Mono (code)
+- **Sizes**: Responsive scale from 12px to 48px
+- **Weights**: 300, 400, 500, 600, 700, 800
+
+### Spacing
+- **Base Unit**: 4px (0.25rem)
+- **Scale**: 4px, 8px, 12px, 16px, 20px, 24px, 32px, 40px, 48px, 64px
+- **Touch Targets**: Minimum 44px for accessibility
+
+## Browser Support
+
+PartPal supports all modern browsers:
+- Chrome 90+
+- Firefox 88+
+- Safari 14+
+- Edge 90+
+
+## Mobile Support
+
+All components are tested and optimized for:
+- iOS Safari 14+
+- Android Chrome 90+
+- Samsung Internet 13+
+
+## Responsive Breakpoints
+
+```css
+xs: 475px
+sm: 640px
+md: 768px
+lg: 1024px
+xl: 1280px
+2xl: 1536px
+```
+
+## Getting Help
+
+### Documentation
+Each component includes comprehensive documentation with:
+- Interactive examples
+- Props API reference
+- Accessibility guidelines
+- Usage patterns
+- Real-world examples
+
+### Code Examples
+All stories include copy-paste ready code examples that you can use directly in your applications.
+
+### Accessibility Testing
+Use the built-in accessibility testing tools to validate your implementations:
+
+```tsx
+import { auditAccessibility } from '@partpal/shared-ui';
+
+const report = auditAccessibility(componentElement);
+console.log(report);
+```
+
+## Contributing
+
+When contributing to the design system:
+
+1. **Follow PartPal Patterns**: Use existing components and patterns when possible
+2. **Test Accessibility**: Ensure WCAG 2.1 AA compliance
+3. **Mobile Testing**: Test on actual mobile devices
+4. **Document Examples**: Include real auto parts use cases
+
+## Auto Parts Industry Context
+
+Understanding the auto parts industry helps when using these components:
+
+### **Vehicle Hierarchy**
+- Make (BMW, Toyota, Ford)
+- Model (X3, Corolla, F-150)
+- Year (2015-2023)
+- Variant (Engine size, trim level)
+
+### **Part Categories**
+- Engine Components
+- Transmission
+- Electrical Systems
+- Suspension
+- Brake Systems
+- Body Parts
+- Interior
+
+### **Condition Grades**
+- New: Brand new, never used
+- Excellent: Like new condition
+- Good: Minor wear, fully functional
+- Fair: Some wear, may need minor repairs
+- Poor: Significant wear, for parts only
+
+### **Business Types**
+- Individual Sellers
+- Auto Dealerships
+- Scrap Yards
+- Auto Workshops
+- Parts Specialists
+
+This context is built into our components to make building auto parts applications faster and more intuitive.

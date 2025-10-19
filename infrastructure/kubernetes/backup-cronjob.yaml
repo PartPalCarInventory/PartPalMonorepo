@@ -1,0 +1,227 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: partpal-database-backup
+  namespace: partpal
+  labels:
+    app: backup
+    component: database
+spec:
+  schedule: "0 2 * * *"  # Daily at 2 AM
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: backup-sa
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1001
+            fsGroup: 1001
+          containers:
+          - name: pg-dump
+            image: postgres:15-alpine
+            command:
+            - /bin/bash
+            - -c
+            - |
+              set -e
+              export PGPASSWORD="$DATABASE_PASSWORD"
+
+              # Create backup filename with timestamp
+              BACKUP_FILE="partpal-backup-$(date +%Y%m%d-%H%M%S).sql"
+
+              echo "Starting database backup: $BACKUP_FILE"
+
+              # Create database dump
+              pg_dump \
+                --host="$DATABASE_HOST" \
+                --port="$DATABASE_PORT" \
+                --username="$DATABASE_USER" \
+                --dbname="$DATABASE_NAME" \
+                --no-password \
+                --verbose \
+                --clean \
+                --if-exists \
+                --format=custom \
+                --compress=9 \
+                --file="/tmp/$BACKUP_FILE"
+
+              # Upload to S3
+              aws s3 cp "/tmp/$BACKUP_FILE" "s3://$S3_BACKUP_BUCKET/database/$BACKUP_FILE" \
+                --storage-class STANDARD_IA
+
+              echo "Backup completed successfully: $BACKUP_FILE"
+
+              # Cleanup old backups (keep last 30 days)
+              aws s3 ls "s3://$S3_BACKUP_BUCKET/database/" | \
+                grep "partpal-backup-" | \
+                sort -k3,4 | \
+                head -n -30 | \
+                awk '{print $4}' | \
+                while read backup; do
+                  if [ ! -z "$backup" ]; then
+                    echo "Deleting old backup: $backup"
+                    aws s3 rm "s3://$S3_BACKUP_BUCKET/database/$backup"
+                  fi
+                done
+            env:
+            - name: DATABASE_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: partpal-db-secret
+                  key: host
+            - name: DATABASE_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: partpal-db-secret
+                  key: port
+            - name: DATABASE_USER
+              valueFrom:
+                secretKeyRef:
+                  name: partpal-db-secret
+                  key: username
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: partpal-db-secret
+                  key: password
+            - name: DATABASE_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: partpal-db-secret
+                  key: database
+            - name: S3_BACKUP_BUCKET
+              valueFrom:
+                configMapKeyRef:
+                  name: backup-config
+                  key: s3-backup-bucket
+            - name: AWS_DEFAULT_REGION
+              value: "af-south-1"
+            resources:
+              requests:
+                memory: "256Mi"
+                cpu: "250m"
+              limits:
+                memory: "512Mi"
+                cpu: "500m"
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              runAsNonRoot: true
+              runAsUser: 1001
+              capabilities:
+                drop:
+                - ALL
+            volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+          volumes:
+          - name: tmp
+            emptyDir: {}
+          restartPolicy: OnFailure
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: partpal-redis-backup
+  namespace: partpal
+  labels:
+    app: backup
+    component: redis
+spec:
+  schedule: "30 2 * * *"  # Daily at 2:30 AM
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: backup-sa
+          containers:
+          - name: redis-backup
+            image: redis:7-alpine
+            command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+
+              # Create backup filename with timestamp
+              BACKUP_FILE="redis-backup-$(date +%Y%m%d-%H%M%S).rdb"
+
+              echo "Starting Redis backup: $BACKUP_FILE"
+
+              # Trigger Redis BGSAVE
+              redis-cli -h "$REDIS_HOST" -p "$REDIS_PORT" BGSAVE
+
+              # Wait for background save to complete
+              while [ "$(redis-cli -h "$REDIS_HOST" -p "$REDIS_PORT" LASTSAVE)" = "$(redis-cli -h "$REDIS_HOST" -p "$REDIS_PORT" LASTSAVE)" ]; do
+                echo "Waiting for Redis backup to complete..."
+                sleep 5
+              done
+
+              # Copy RDB file (this would need to be adapted based on your Redis setup)
+              echo "Redis backup completed"
+
+              # For managed Redis (ElastiCache), backups are handled automatically
+              # This job serves as a placeholder for custom backup logic if needed
+            env:
+            - name: REDIS_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: partpal-config
+                  key: redis-host
+            - name: REDIS_PORT
+              value: "6379"
+            resources:
+              requests:
+                memory: "128Mi"
+                cpu: "100m"
+              limits:
+                memory: "256Mi"
+                cpu: "200m"
+          restartPolicy: OnFailure
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backup-config
+  namespace: partpal
+data:
+  s3-backup-bucket: "partpal-production-backups"
+  backup-retention-days: "30"
+  notification-webhook: "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK"
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: backup-sa
+  namespace: partpal
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::ACCOUNT-ID:role/partpal-backup-role
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: partpal
+  name: backup-role
+rules:
+- apiGroups: [""]
+  resources: ["configmaps", "secrets"]
+  verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: backup-rolebinding
+  namespace: partpal
+subjects:
+- kind: ServiceAccount
+  name: backup-sa
+  namespace: partpal
+roleRef:
+  kind: Role
+  name: backup-role
+  apiGroup: rbac.authorization.k8s.io

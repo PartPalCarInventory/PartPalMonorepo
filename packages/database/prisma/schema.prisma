@@ -1,0 +1,236 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User and Authentication
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  name          String
+  password      String
+  role          String   @default("BUYER")
+  isVerified    Boolean  @default(false)
+  emailVerified DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  seller        Seller?
+  refreshTokens RefreshToken[]
+
+  // Indexes for performance
+  @@index([email])
+  @@index([role])
+  @@index([isVerified])
+  @@index([createdAt])
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("refresh_tokens")
+}
+
+// Business Entities
+model Seller {
+  id               String          @id @default(cuid())
+  userId           String          @unique
+  businessName     String
+  businessType     String
+  description      String?
+  isVerified       Boolean         @default(false)
+  rating           Float?
+  totalSales       Int             @default(0)
+  subscriptionPlan String           @default("STARTER")
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  // Address information
+  street      String
+  city        String
+  province    String
+  postalCode  String
+  country     String @default("South Africa")
+  latitude    Float?
+  longitude   Float?
+
+  // Contact information
+  phone     String
+  email     String?
+  whatsapp  String?
+  website   String?
+
+  // Business hours (stored as JSON)
+  businessHours Json? // JSON type for PostgreSQL
+
+  // Relations
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vehicles Vehicle[]
+  parts    Part[]
+
+  // Indexes for search and filtering
+  @@index([businessType])
+  @@index([isVerified])
+  @@index([city, province])
+  @@index([rating])
+  @@index([subscriptionPlan])
+  @@index([createdAt])
+  @@index([latitude, longitude]) // For geo-spatial searches
+  @@map("sellers")
+}
+
+model Vehicle {
+  id              String    @id @default(cuid())
+  vin             String    @unique
+  year            Int
+  make            String
+  model           String
+  variant         String?
+  engineSize      String?
+  fuelType        String?
+  transmission    String?
+  color           String?
+  mileage         Int?
+  condition       String
+  acquisitionDate DateTime
+  sellerId        String
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relations
+  seller Seller @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  parts  Part[]
+
+  // Indexes for search performance
+  @@index([make, model, year])
+  @@index([sellerId])
+  @@index([year])
+  @@index([condition])
+  @@index([acquisitionDate])
+  @@index([fuelType])
+  @@index([transmission])
+  @@map("vehicles")
+}
+
+model Part {
+  id                    String     @id @default(cuid())
+  vehicleId             String
+  sellerId              String
+  name                  String
+  partNumber            String?
+  description           String
+  condition             String
+  price                 Float
+  currency              String     @default("ZAR")
+  status                String     @default("AVAILABLE")
+  location              String
+  images                Json       // JSON array of image URLs
+  isListedOnMarketplace Boolean    @default(false)
+  categoryId            String?
+  createdAt             DateTime   @default(now())
+  updatedAt             DateTime   @updatedAt
+
+  // Relations
+  vehicle  Vehicle   @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  seller   Seller    @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  category Category? @relation(fields: [categoryId], references: [id])
+
+  // Indexes for search performance
+  @@index([name])
+  @@index([partNumber])
+  @@index([sellerId])
+  @@index([vehicleId])
+  @@index([categoryId])
+  @@index([isListedOnMarketplace])
+  @@index([status])
+  @@index([condition])
+  @@index([price])
+  @@index([createdAt])
+  @@index([isListedOnMarketplace, status]) // Composite index for marketplace queries
+  @@index([sellerId, isListedOnMarketplace]) // Composite index for seller's marketplace parts
+  @@map("parts")
+}
+
+model Category {
+  id          String  @id @default(cuid())
+  name        String  @unique
+  parentId    String?
+  description String?
+  isActive    Boolean @default(true)
+
+  // Relations
+  parent   Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryHierarchy")
+  parts    Part[]
+
+  // Indexes for category hierarchy and filtering
+  @@index([parentId])
+  @@index([isActive])
+  @@index([name])
+  @@map("categories")
+}
+
+// Analytics and Activity Logging
+model AnalyticsEvent {
+  id         String   @id @default(cuid())
+  eventType  String   // "PART_VIEW", "SEARCH", "SELLER_CONTACT", etc.
+  partId     String?
+  sellerId   String?
+  userId     String?
+  sessionId  String?
+  userAgent  String?
+  metadata   Json?    // JSON type for additional data
+  timestamp  DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  // Indexes for analytics queries
+  @@index([eventType])
+  @@index([partId])
+  @@index([sellerId])
+  @@index([timestamp])
+  @@index([sessionId])
+  @@index([eventType, timestamp])
+  @@map("analytics_events")
+}
+
+model ActivityLog {
+  id          String   @id @default(cuid())
+  sellerId    String?
+  userId      String?
+  type        String   // "part_sold", "marketplace_listing", "vehicle_added", etc.
+  description String
+  metadata    Json?    // JSON type for PostgreSQL
+  timestamp   DateTime @default(now())
+
+  // Indexes for activity queries
+  @@index([sellerId])
+  @@index([userId])
+  @@index([type])
+  @@index([timestamp])
+  @@index([sellerId, timestamp])
+  @@map("activity_logs")
+}
+
+// SQLite-compatible string fields instead of enums
+// Role: "ADMIN", "SELLER", "BUYER"
+// BusinessType: "SCRAP_YARD", "DISMANTLER", "PRIVATE"
+// SubscriptionPlan: "STARTER", "PROFESSIONAL", "ENTERPRISE"
+// Condition: "NEW", "EXCELLENT", "GOOD", "FAIR", "POOR"
+// PartStatus: "AVAILABLE", "RESERVED", "SOLD"
+// EventType: "PART_VIEW", "SEARCH", "SELLER_CONTACT"
+// ActivityType: "part_sold", "marketplace_listing", "vehicle_added", "part_listed"

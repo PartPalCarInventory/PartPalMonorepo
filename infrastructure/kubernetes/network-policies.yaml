@@ -1,0 +1,123 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: partpal-marketplace-netpol
+  namespace: partpal
+spec:
+  podSelector:
+    matchLabels:
+      app: partpal-marketplace
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    - podSelector:
+        matchLabels:
+          app: nginx-ingress
+    ports:
+    - protocol: TCP
+      port: 3000
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          app: partpal-api
+    ports:
+    - protocol: TCP
+      port: 3333
+  - to: [] # Allow DNS resolution
+    ports:
+    - protocol: UDP
+      port: 53
+  - to: [] # Allow HTTPS outbound for external APIs
+    ports:
+    - protocol: TCP
+      port: 443
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: partpal-ims-netpol
+  namespace: partpal
+spec:
+  podSelector:
+    matchLabels:
+      app: partpal-ims
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    - podSelector:
+        matchLabels:
+          app: nginx-ingress
+    ports:
+    - protocol: TCP
+      port: 3001
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          app: partpal-api
+    ports:
+    - protocol: TCP
+      port: 3333
+  - to: [] # Allow DNS resolution
+    ports:
+    - protocol: UDP
+      port: 53
+  - to: [] # Allow HTTPS outbound for external APIs
+    ports:
+    - protocol: TCP
+      port: 443
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: partpal-api-netpol
+  namespace: partpal
+spec:
+  podSelector:
+    matchLabels:
+      app: partpal-api
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: partpal-marketplace
+    - podSelector:
+        matchLabels:
+          app: partpal-ims
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    ports:
+    - protocol: TCP
+      port: 3333
+  egress:
+  - to: [] # Allow database connections
+    ports:
+    - protocol: TCP
+      port: 5432
+  - to: [] # Allow Redis connections
+    ports:
+    - protocol: TCP
+      port: 6379
+  - to: [] # Allow DNS resolution
+    ports:
+    - protocol: UDP
+      port: 53
+  - to: [] # Allow HTTPS outbound for external APIs
+    ports:
+    - protocol: TCP
+      port: 443
