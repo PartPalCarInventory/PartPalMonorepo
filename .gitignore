@@ -50,3 +50,10 @@ lerna-debug.log*
 
 # Docker
 docker-compose.override.yml
+
+# Marketplace application (IMS-only repository)
+apps/marketplace/
+
+# Agent states and temporary files
+.agent-states/
+.claude/
