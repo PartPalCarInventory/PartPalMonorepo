@@ -19,7 +19,8 @@
     "dev:ims": "pnpm --filter @partpal/ims dev",
     "dev:marketplace": "pnpm --filter @partpal/marketplace dev",
     "dev:api": "pnpm --filter @partpal/api dev",
-    "prepare": "husky"
+    "prepare": "husky install || true",
+    "postinstall": "test \"$VERCEL\" = \"1\" || husky install || true"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
