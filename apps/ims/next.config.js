@@ -3,8 +3,8 @@ const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
 
-  // Enable standalone output for Docker
-  output: 'standalone',
+  // Enable standalone output for Docker, but remove for Vercel deployment
+  // output: 'standalone',
 
   // PWA Configuration
   ...(process.env.NODE_ENV === 'production' && {

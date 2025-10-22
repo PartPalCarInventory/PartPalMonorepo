@@ -57,3 +57,13 @@ apps/marketplace/
 # Agent states and temporary files
 .agent-states/
 .claude/
+
+# AWS and Kubernetes deployment configurations (kept local only)
+.local-deployment-configs/
+infrastructure/
+.github/workflows/aws-*.yml
+.github/workflows/infrastructure.yml
+docker-compose.production.yml
+docker-compose.staging.yml
+PHASE1_DEPLOYMENT_GUIDE.md
+QUICK_DEPLOYMENT_CHECKLIST.md

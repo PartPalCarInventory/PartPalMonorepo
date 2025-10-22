@@ -120,7 +120,6 @@ Copy `.env.example` to `.env` and configure:
 - Database: PostgreSQL connection string
 - Redis: Cache and session storage
 - Cloudinary: Image storage and optimization
-- Mapbox: Location services for marketplace
 - Analytics: Google Analytics for tracking
 
 ## Cloud Deployment
@@ -144,7 +143,7 @@ Marketplace implements multi-criteria search:
 - Vehicle-based (Year/Make/Model)
 - Part name (fuzzy search)
 - Part number (exact match)
-- Location filtering with radius
+- Location-based filtering (via seller location)
 
 ### Mobile Optimization
 Both applications are PWA-enabled with:
