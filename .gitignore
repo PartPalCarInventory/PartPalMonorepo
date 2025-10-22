@@ -61,8 +61,7 @@ apps/marketplace/
 # AWS and Kubernetes deployment configurations (kept local only)
 .local-deployment-configs/
 infrastructure/
-.github/workflows/aws-*.yml
-.github/workflows/infrastructure.yml
+.github/workflows/
 docker-compose.production.yml
 docker-compose.staging.yml
 PHASE1_DEPLOYMENT_GUIDE.md
