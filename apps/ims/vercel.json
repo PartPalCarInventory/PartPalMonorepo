@@ -28,13 +28,5 @@
       "source": "/api/:path*",
       "destination": "/api/:path*"
     }
-  ],
-  "functions": {
-    "app/**/*.{js,ts,tsx}": {
-      "maxDuration": 30
-    },
-    "pages/api/**/*.{js,ts}": {
-      "maxDuration": 30
-    }
-  }
+  ]
 }
