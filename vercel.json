@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "cd apps/ims && pnpm build",
-  "devCommand": "cd apps/ims && pnpm dev",
+  "buildCommand": "pnpm --filter @partpal/ims build",
+  "devCommand": "pnpm --filter @partpal/ims dev",
   "installCommand": "pnpm install",
   "framework": "nextjs",
   "outputDirectory": "apps/ims/.next"

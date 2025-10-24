@@ -18,9 +18,9 @@
     "jsx": "preserve",
     "baseUrl": ".",
     "paths": {
-      "@partpal/shared-types": ["../../packages/shared-types/dist"],
-      "@partpal/shared-ui": ["../../packages/shared-ui/dist"],
-      "@partpal/shared-utils": ["../../packages/shared-utils/dist"]
+      "@partpal/shared-types": ["../../packages/shared-types/src"],
+      "@partpal/shared-ui": ["../../packages/shared-ui/src"],
+      "@partpal/shared-utils": ["../../packages/shared-utils/src"]
     }
   },
   "include": [
