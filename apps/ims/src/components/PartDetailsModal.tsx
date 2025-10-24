@@ -24,7 +24,9 @@ export const PartDetailsModal: FC<PartDetailsModalProps> = ({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   const handleDelete = async () => {
     setShowDeleteConfirm(false);

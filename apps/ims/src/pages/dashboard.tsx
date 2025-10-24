@@ -11,9 +11,7 @@ import { PartsInventoryChart } from '../components/PartsInventoryChart';
 import { MobileLayout, MobileCard } from '../components/MobileLayout';
 import Link from 'next/link';
 
-interface DashboardProps {}
-
-const Dashboard: React.FC<DashboardProps> = () => {
+const Dashboard: React.FC = () => {
   const [selectedPeriod, setSelectedPeriod] = useState<'7d' | '30d' | '90d' | '1y'>('30d');
 
   // Fetch dashboard stats

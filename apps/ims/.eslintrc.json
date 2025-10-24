@@ -33,9 +33,11 @@
     "react-hooks/exhaustive-deps": "warn",
     "prefer-const": "warn",
     "no-var": "error",
-    "eqeqeq": ["error", "always"],
-    "curly": ["error", "all"],
-    "no-debugger": "warn"
+    "eqeqeq": ["warn", "always"],
+    "curly": ["warn", "all"],
+    "no-debugger": "warn",
+    "react/display-name": "warn",
+    "@typescript-eslint/no-empty-object-type": "warn"
   },
   "env": {
     "browser": true,

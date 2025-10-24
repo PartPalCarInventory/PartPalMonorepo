@@ -66,3 +66,4 @@ docker-compose.production.yml
 docker-compose.staging.yml
 PHASE1_DEPLOYMENT_GUIDE.md
 QUICK_DEPLOYMENT_CHECKLIST.md
+.vercel

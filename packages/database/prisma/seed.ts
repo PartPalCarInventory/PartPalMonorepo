@@ -459,7 +459,6 @@ async function createParts(vehicles: any[], categories: Map<string, any>) {
     // VW Golf GTI parts
     {
       vehicleId: vehicles[2].id,
-      parts: [
         {
           name: 'Manual Gearbox',
           partNumber: 'VW-02M300012FX',

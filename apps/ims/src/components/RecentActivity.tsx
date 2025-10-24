@@ -1,4 +1,5 @@
 import { FC } from 'react';
+import Link from 'next/link';
 import { Activity } from '@partpal/shared-types';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -124,12 +125,12 @@ export const RecentActivity: FC<RecentActivityProps> = ({ activities }) => {
 
       {/* View All Button */}
       <div className="pt-4 border-t border-gray-200">
-        <a
+        <Link
           href="/reports"
           className="block w-full text-center text-sm text-blue-600 hover:text-blue-800 font-medium py-2 hover:bg-blue-50 rounded transition-colors"
         >
           View All Activity
-        </a>
+        </Link>
       </div>
     </div>
   );

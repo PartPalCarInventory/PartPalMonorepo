@@ -1,4 +1,5 @@
 import { FC } from 'react';
+import Link from 'next/link';
 import { Part } from '@partpal/shared-types';
 
 interface TopSellingPartsProps {
@@ -201,12 +202,12 @@ export const TopSellingParts: FC<TopSellingPartsProps> = ({ parts }) => {
 
       {/* View All Button */}
       <div className="pt-4 border-t border-gray-200">
-        <a
+        <Link
           href="/reports"
           className="block w-full text-center text-sm text-blue-600 hover:text-blue-800 font-medium py-2 hover:bg-blue-50 rounded transition-colors"
         >
           View All Sales Reports
-        </a>
+        </Link>
       </div>
     </div>
   );

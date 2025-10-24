@@ -3,6 +3,22 @@ const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
 
+  webpack: (config, { isServer, dev }) => {
+    if (!isServer && !dev) {
+      config.optimization.splitChunks = {
+        chunks: 'all',
+        cacheGroups: {
+          vendor: {
+            test: /[\\/]node_modules[\\/]/,
+            name: 'vendors',
+            chunks: 'all',
+          },
+        },
+      };
+    }
+    return config;
+  },
+
   // Enable standalone output for Docker, but remove for Vercel deployment
   // output: 'standalone',
 
@@ -72,23 +88,6 @@ const nextConfig = {
   // Experimental features
   experimental: {
     // optimizeCss: true, // Disabled - causing issues with Tailwind CSS
-  },
-
-  // Webpack configuration
-  webpack: (config, { isServer, dev }) => {
-    if (!isServer && !dev) {
-      config.optimization.splitChunks = {
-        chunks: 'all',
-        cacheGroups: {
-          vendor: {
-            test: /[\\/]node_modules[\\/]/,
-            name: 'vendors',
-            chunks: 'all',
-          },
-        },
-      };
-    }
-    return config;
   },
 
   // Compression and performance

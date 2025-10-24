@@ -19,7 +19,9 @@ export const PartModal: FC<PartModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   const handleSave = async (data: PartFormData) => {
     setIsSubmitting(true);

@@ -25,7 +25,9 @@ export const RevenueChart: FC<RevenueChartProps> = ({ period }) => {
   });
 
   const chartData = useMemo(() => {
-    if (!revenueData) return [];
+    if (!revenueData) {
+      return [];
+    }
 
     return revenueData.map(item => ({
       ...item,

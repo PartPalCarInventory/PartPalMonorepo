@@ -136,11 +136,21 @@ const filterVehicles = (vehicles: Vehicle[], filters: any) => {
       }
     }
 
-    if (filters.make && vehicle.make !== filters.make) return false;
-    if (filters.model && !vehicle.model.toLowerCase().includes(filters.model.toLowerCase())) return false;
-    if (filters.yearFrom && vehicle.year < parseInt(filters.yearFrom)) return false;
-    if (filters.yearTo && vehicle.year > parseInt(filters.yearTo)) return false;
-    if (filters.condition && !filters.condition.includes(vehicle.condition)) return false;
+    if (filters.make && vehicle.make !== filters.make) {
+      return false;
+    }
+    if (filters.model && !vehicle.model.toLowerCase().includes(filters.model.toLowerCase())) {
+      return false;
+    }
+    if (filters.yearFrom && vehicle.year < parseInt(filters.yearFrom)) {
+      return false;
+    }
+    if (filters.yearTo && vehicle.year > parseInt(filters.yearTo)) {
+      return false;
+    }
+    if (filters.condition && !filters.condition.includes(vehicle.condition)) {
+      return false;
+    }
 
     return true;
   });

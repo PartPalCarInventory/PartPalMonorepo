@@ -25,7 +25,9 @@ export const UserMenu: FC = () => {
     router.push('/login');
   };
 
-  if (!user) return null;
+  if (!user) {
+    return null;
+  }
 
   return (
     <div className="relative" ref={menuRef}>

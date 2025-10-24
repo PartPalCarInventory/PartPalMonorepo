@@ -133,13 +133,27 @@ const filterParts = (parts: Part[], filters: any) => {
       }
     }
 
-    if (filters.categoryId && part.categoryId !== filters.categoryId) return false;
-    if (filters.vehicleId && part.vehicleId !== filters.vehicleId) return false;
-    if (filters.status && !filters.status.split(',').includes(part.status)) return false;
-    if (filters.condition && !filters.condition.split(',').includes(part.condition)) return false;
-    if (filters.priceMin && part.price < parseFloat(filters.priceMin)) return false;
-    if (filters.priceMax && part.price > parseFloat(filters.priceMax)) return false;
-    if (filters.isListedOnMarketplace === 'true' && !part.isListedOnMarketplace) return false;
+    if (filters.categoryId && part.categoryId !== filters.categoryId) {
+      return false;
+    }
+    if (filters.vehicleId && part.vehicleId !== filters.vehicleId) {
+      return false;
+    }
+    if (filters.status && !filters.status.split(',').includes(part.status)) {
+      return false;
+    }
+    if (filters.condition && !filters.condition.split(',').includes(part.condition)) {
+      return false;
+    }
+    if (filters.priceMin && part.price < parseFloat(filters.priceMin)) {
+      return false;
+    }
+    if (filters.priceMax && part.price > parseFloat(filters.priceMax)) {
+      return false;
+    }
+    if (filters.isListedOnMarketplace === 'true' && !part.isListedOnMarketplace) {
+      return false;
+    }
 
     return true;
   });
@@ -203,13 +217,13 @@ export default function handler(
 
   } else if (req.method === 'POST') {
     try {
-      const data = req.body;
+      const data = req.body as Partial<Part>;
 
       // Validate required fields
-      if (!data.vehicleId || !data.name || !data.description || !data.categoryId || !data.price) {
+      if (!data.vehicleId || !data.name || !data.description || !data.categoryId || !data.price || !data.location) {
         return res.status(400).json({
           success: false,
-          message: 'Missing required fields: vehicleId, name, description, categoryId, and price are required',
+          message: 'Missing required fields',
         });
       }
 

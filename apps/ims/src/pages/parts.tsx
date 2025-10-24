@@ -94,7 +94,9 @@ const Parts: React.FC = () => {
   };
 
   const handleDelete = async () => {
-    if (!selectedPart) return;
+    if (!selectedPart) {
+      return;
+    }
 
     try {
       const response = await fetch(`/api/parts/${selectedPart.id}`, {
@@ -119,7 +121,9 @@ const Parts: React.FC = () => {
   };
 
   const handleToggleMarketplace = async () => {
-    if (!selectedPart) return;
+    if (!selectedPart) {
+      return;
+    }
 
     try {
       const response = await fetch(`/api/parts/${selectedPart.id}`, {
@@ -147,7 +151,9 @@ const Parts: React.FC = () => {
   };
 
   const handleStatusChange = async (newStatus: Part['status']) => {
-    if (!selectedPart) return;
+    if (!selectedPart) {
+      return;
+    }
 
     try {
       const response = await fetch(`/api/parts/${selectedPart.id}`, {

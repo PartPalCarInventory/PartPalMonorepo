@@ -4,9 +4,11 @@ import { mockPart } from '../test-utils';
 
 // Mock Next.js Link
 jest.mock('next/link', () => {
-  return ({ children, href }: any) => {
+  const MockLink = ({ children, href }: any) => {
     return <a href={href}>{children}</a>;
   };
+  MockLink.displayName = 'MockLink';
+  return MockLink;
 });
 
 // Mock fetch

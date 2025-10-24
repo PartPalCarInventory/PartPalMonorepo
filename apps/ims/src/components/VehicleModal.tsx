@@ -55,13 +55,17 @@ export const VehicleModal: FC<VehicleModalProps> = ({
   };
 
   const handleDelete = async () => {
-    if (!vehicle) return;
+    if (!vehicle) {
+      return;
+    }
 
     const confirmed = window.confirm(
       `Are you sure you want to delete this vehicle? This action cannot be undone.`
     );
 
-    if (!confirmed) return;
+    if (!confirmed) {
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -82,7 +86,9 @@ export const VehicleModal: FC<VehicleModalProps> = ({
     }
   };
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">

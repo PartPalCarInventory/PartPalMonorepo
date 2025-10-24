@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { Part, PartFormData } from '@partpal/shared-types';
+import { Part } from '@partpal/shared-types';
 
 // In-memory storage for development
 // In production, this would connect to a database
@@ -109,7 +109,7 @@ export default function handler(
   // Handle POST - Create new part
   else if (req.method === 'POST') {
     try {
-      const data: PartFormData & { currency: string; status: Part['status']; isListedOnMarketplace: boolean; images: string[] } = req.body;
+      const data = req.body as Partial<Part>;
 
       // Validate required fields
       if (!data.vehicleId || !data.name || !data.description || !data.categoryId || !data.price || !data.location) {
@@ -123,12 +123,12 @@ export default function handler(
       const newPart: Part = {
         id: `part-${nextId++}`,
         sellerId: 'seller-1', // In production, get from auth session
-        vehicleId: data.vehicleId,
-        name: data.name,
+        vehicleId: data.vehicleId!,
+        name: data.name!,
         partNumber: data.partNumber,
-        description: data.description,
-        condition: data.condition,
-        price: data.price,
+        description: data.description!,
+        condition: data.condition || 'GOOD',
+        price: data.price!,
         currency: data.currency || 'ZAR',
         status: data.status || 'AVAILABLE',
         location: data.location,

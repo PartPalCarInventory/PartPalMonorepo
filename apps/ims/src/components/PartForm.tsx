@@ -1,6 +1,6 @@
 import { FC, useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Part, PartFormData, Vehicle, Category } from '@partpal/shared-types';
+import { Part, PartFormData, Vehicle } from '@partpal/shared-types';
 
 interface PartFormProps {
   part?: Part;

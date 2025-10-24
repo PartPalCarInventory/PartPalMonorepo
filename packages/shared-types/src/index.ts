@@ -201,6 +201,7 @@ export interface VehicleFormData {
 }
 
 export interface PartFormData {
+  vehicleId: string;
   name: string;
   partNumber?: string;
   description: string;
@@ -208,7 +209,16 @@ export interface PartFormData {
   price: number;
   location: string;
   categoryId: string;
-  images: File[];
+  weight?: number;
+  dimensions?: {
+    length: number;
+    width: number;
+    height: number;
+  };
+  compatibility?: string[];
+  warranty?: number;
+  installationNotes?: string;
+  images?: File[];
 }
 
 // Subscription Plans
