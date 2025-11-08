@@ -1,8 +1,8 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "pnpm --filter @partpal/ims build",
-  "devCommand": "pnpm --filter @partpal/ims dev",
-  "installCommand": "pnpm install",
+  "buildCommand": "cd ../.. && pnpm install --no-frozen-lockfile && pnpm --filter @partpal/ims build",
+  "devCommand": "cd ../.. && pnpm --filter @partpal/ims dev",
+  "installCommand": "echo 'Skipping install in favor of buildCommand'",
   "framework": "nextjs",
-  "outputDirectory": "apps/ims/.next"
+  "outputDirectory": ".next"
 }
