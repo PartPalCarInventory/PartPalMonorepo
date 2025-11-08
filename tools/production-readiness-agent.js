@@ -151,36 +151,36 @@ class ProductionReadinessCoordinator {
       },
       'redis-integration': {
         name: 'Redis Integration Agent',
-        priority: 'HIGH',
+        priority: 'MEDIUM',
         dependencies: ['database-migration'],
-        estimatedHours: 8,
+        estimatedHours: 6,
         tasks: [
-          'setup-redis-server',
-          'implement-redis-rate-limiter',
+          'setup-vercel-kv',
+          'implement-vercel-kv-rate-limiter',
           'implement-session-storage',
           'implement-cache-layer',
-          'test-redis-integration',
-          'document-redis-configuration'
+          'test-vercel-kv-integration',
+          'document-vercel-kv-configuration'
         ],
         blockers: [
           'In-memory rate limiter (not production-ready)',
-          'Redis configuration exists but not implemented',
-          'Rate limiter won\'t work across multiple instances'
+          'Vercel KV not configured',
+          'Rate limiter won\'t work across multiple edge functions'
         ]
       },
       'production-environment': {
         name: 'Production Environment Agent',
         priority: 'CRITICAL',
-        dependencies: ['security-vulnerability-remediation', 'database-migration', 'redis-integration'],
-        estimatedHours: 16,
+        dependencies: ['security-vulnerability-remediation', 'database-migration'],
+        estimatedHours: 12,
         tasks: [
-          'setup-secrets-management',
+          'setup-vercel-environment-variables',
           'configure-cloudinary',
           'configure-email-service',
           'setup-mapbox-integration',
           'configure-sentry-monitoring',
           'setup-google-analytics',
-          'configure-production-env',
+          'configure-vercel-postgres',
           'verify-environment-security'
         ],
         blockers: [
@@ -189,28 +189,27 @@ class ProductionReadinessCoordinator {
           'Missing SMTP configuration',
           'Missing Mapbox token',
           'Missing Sentry DSN',
-          'No production secrets strategy'
+          'No Vercel environment variables configured'
         ]
       },
       'ci-cd-pipeline': {
         name: 'CI/CD Pipeline Agent',
         priority: 'HIGH',
-        dependencies: ['linting-configuration', 'ims-test-coverage', 'api-test-coverage'],
-        estimatedHours: 12,
+        dependencies: ['linting-configuration'],
+        estimatedHours: 8,
         tasks: [
-          'verify-existing-ci-pipeline',
-          'enhance-automated-testing',
-          'add-coverage-reporting',
+          'verify-existing-github-actions',
+          'configure-vercel-integration',
+          'setup-preview-deployments',
           'configure-linting-enforcement',
           'enhance-security-scanning',
-          'configure-staging-deployment',
-          'configure-production-deployment',
-          'test-complete-pipeline'
+          'setup-production-deployment-protection',
+          'test-deployment-pipeline'
         ],
         blockers: [
-          'CI pipeline exists but requires test coverage to be effective',
-          'No test coverage reports in CI',
-          'Deployment workflows need production secrets configuration'
+          'Vercel integration needs to be configured',
+          'GitHub Actions need Vercel deployment workflow',
+          'No deployment protection rules configured'
         ]
       },
       'api-documentation': {
@@ -262,29 +261,28 @@ class ProductionReadinessCoordinator {
           'type-safety-remediation',
           'security-vulnerability-remediation',
           'ims-test-coverage',
-          'api-test-coverage',
           'database-migration',
-          'redis-integration',
           'production-environment',
           'ci-cd-pipeline'
         ],
-        estimatedHours: 24,
+        estimatedHours: 16,
         tasks: [
-          'setup-docker-production',
-          'configure-kubernetes',
-          'setup-load-balancer',
-          'configure-ssl-certificates',
-          'setup-monitoring-dashboards',
-          'create-runbook',
-          'perform-security-audit',
-          'dry-run-deployment',
-          'production-deployment',
+          'configure-vercel-project',
+          'setup-vercel-postgres-production',
+          'configure-vercel-edge-functions',
+          'setup-vercel-domains',
+          'configure-vercel-edge-config',
+          'setup-vercel-monitoring',
+          'create-deployment-runbook',
+          'perform-vercel-preview-deployment',
+          'production-deployment-to-vercel',
           'post-deployment-verification'
         ],
         blockers: [
           'All critical blockers must be resolved',
           'All tests must pass',
-          'Security vulnerabilities must be fixed'
+          'Security vulnerabilities must be fixed',
+          'Vercel project must be configured'
         ]
       }
     };

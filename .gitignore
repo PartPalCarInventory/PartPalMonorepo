@@ -67,3 +67,5 @@ docker-compose.staging.yml
 PHASE1_DEPLOYMENT_GUIDE.md
 QUICK_DEPLOYMENT_CHECKLIST.md
 .vercel
+apps/ims/error_file.txt
+idea_proposal.txt
